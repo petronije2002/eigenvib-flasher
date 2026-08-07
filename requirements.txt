@@ -1,0 +1,4 @@
+esptool>=4.5
+pyserial>=3.5
+segno>=1.5
+pillow>=10.2   # captions the QR PNG with the human-readable code

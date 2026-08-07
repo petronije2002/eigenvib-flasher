@@ -1,0 +1,6 @@
+build_venv/
+dist/
+build/
+*.spec
+qr_codes/
+__pycache__/
