@@ -103,8 +103,11 @@ def make_qr(node_id, psk_hex, code, out_dir):
     psk = bytes.fromhex(psk_hex)
     if len(psk) != 32:
         raise SystemExit("captured PSK is not 32 bytes")
+    # The 6-char code goes INTO the QR payload so the wizard reads it from the scanned
+    # QR (always correct) instead of the OS-cached BLE advertised name.
     payload = json.dumps({"v": 1, "nid": node_id,
-                          "psk": base64.urlsafe_b64encode(psk).decode().rstrip("=")},
+                          "psk": base64.urlsafe_b64encode(psk).decode().rstrip("="),
+                          "code": code},
                          separators=(",", ":"))
     png = os.path.join(out_dir, f"{code}.png")
     # Render the QR, then caption it with the human-readable code so the printed /
