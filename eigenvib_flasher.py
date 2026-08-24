@@ -98,6 +98,22 @@ def reset_and_capture(port, timeout):
         s.close()
 
 
+def reset_node(port):
+    """Reset the node into the app WITHOUT capturing serial. Used in firmware-update
+    mode: the node keeps its NVS identity, so it will NOT print a PROV line — there is
+    nothing to capture, and waiting for one would just hang. This only pulses EN so the
+    node leaves the bootloader ('--after no_reset') and boots the freshly-flashed app."""
+    s = serial.Serial(port, 115200, timeout=0.5)
+    try:
+        s.dtr = False          # IO0 high → normal boot (not download)
+        s.rts = True           # EN low → reset
+        time.sleep(0.15)
+        s.rts = False          # EN high → run app
+        time.sleep(0.3)        # give it a moment to start booting
+    finally:
+        s.close()
+
+
 def make_qr(node_id, psk_hex, code, out_dir):
     os.makedirs(out_dir, exist_ok=True)
     psk = bytes.fromhex(psk_hex)
@@ -180,12 +196,16 @@ def main():
     print(f"Node on {port}\n")
     flash(port, fw, erase=not a.no_erase)
 
+    if a.no_erase:
+        # Update mode: identity/PSK preserved → no new PROV line → don't wait for a QR.
+        print("• resetting node into app (firmware update — identity/PSK preserved) …")
+        reset_node(port)
+        print("\n✓ Firmware updated. Identity/PSK preserved — the existing QR still applies.")
+        return 0
+
     print("• booting + capturing the QR secret …")
     got = reset_and_capture(port, a.timeout)
     if not got:
-        if a.no_erase:
-            print("\n✓ Firmware updated. No PROV line (identity/PSK preserved) — the existing QR still applies.")
-            return 0
         raise SystemExit("No PROV line captured within timeout. Retry (some boards need the RESET/EN button tapped).")
 
     node_id, psk_hex, code = got

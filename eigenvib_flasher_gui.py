@@ -34,6 +34,7 @@ from eigenvib_flasher import (
     find_port,
     flash,
     reset_and_capture,
+    reset_node,
     make_qr,
     append_registry,
 )
@@ -334,13 +335,21 @@ class FlasherGUI:
             port = find_port(port)
             print(f"Node on {port}\n")
             flash(port, fw, erase=erase)
+            if not erase:
+                # Update mode: node keeps its NVS identity → no new PROV line will be
+                # printed → don't wait 30 s for a QR that never comes. Just reset into app.
+                print("• resetting node into app (firmware update — identity/PSK preserved) …")
+                reset_node(port)
+                print("\n" + "=" * 60)
+                print("✓ FIRMWARE UPDATED — identity & QR preserved. Node is booting.")
+                print("  Unplug it and flash the next node.")
+                print("=" * 60)
+                self.q.put(("updated", None))
+                return
             print("• booting + capturing the QR secret …")
             got = reset_and_capture(port, 30)
             if not got:
-                if not erase:
-                    self.q.put(("updated", None))
-                else:
-                    self.q.put(("error", "No PROV line captured. Tap the RESET/EN button and retry."))
+                self.q.put(("error", "No PROV line captured. Tap the RESET/EN button and retry."))
                 return
             node_id, psk_hex, code = got
             png, _ = make_qr(node_id, psk_hex, code, qrdir)
@@ -374,8 +383,11 @@ class FlasherGUI:
                     self._grace = 4  # ignore the node's post-flash re-enumeration
                     self._set_busy(False, f"Done — code {code}. QR saved. Print & stick it on the box.")
                 elif kind == "updated":
-                    self.code_lbl["text"] = "—"
-                    self._set_busy(False, "Firmware updated. Identity + PSK preserved (existing QR still applies).")
+                    self.code_lbl["text"] = "✓ UPDATED"
+                    self.nid_lbl["text"] = "Firmware updated\nidentity + PSK preserved\n(existing QR still applies)"
+                    self._have_result = True
+                    self._grace = 4  # ignore the node's post-flash re-enumeration (kao kod 'done')
+                    self._set_busy(False, "✓ Firmware updated — identity/PSK preserved. Unplug & flash next.")
                 elif kind == "error":
                     self._set_busy(False, "Failed — see log.")
                     messagebox.showerror(APP, payload)
