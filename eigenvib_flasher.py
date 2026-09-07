@@ -30,6 +30,7 @@ import serial.tools.list_ports
 CHIP = "esp32s3"
 # Flash layout (from the project's build/flasher_args.json — stable for this project).
 IMAGES = [("0x0", "bootloader.bin"), ("0x8000", "partition-table.bin"), ("0x10000", "sensor_node.bin")]
+QR_SVG_MM = 20.0  # physical size (mm) of the vector QR for the enclosure sticker
 PROV_RE = re.compile(r"PROV node_id=(\S+)\s+psk=([0-9a-fA-F]{64})\s+code=(\S+)")
 # USB vendor ids we accept: Espressif native USB-JTAG, CP210x, CH34x, FTDI.
 KNOWN_VIDS = {0x303A, 0x10C4, 0x1A86, 0x0403}
@@ -99,17 +100,15 @@ def reset_and_capture(port, timeout):
 
 
 def reset_node(port):
-    """Reset the node into the app WITHOUT capturing serial. Used in firmware-update
-    mode: the node keeps its NVS identity, so it will NOT print a PROV line — there is
-    nothing to capture, and waiting for one would just hang. This only pulses EN so the
-    node leaves the bootloader ('--after no_reset') and boots the freshly-flashed app."""
+    """Reset the node into the app (no serial capture). Used after a firmware-only
+    update (erase=False): the node reboots into the new app keeping its NVS
+    identity/PSK, so there is no new PROV line to wait for."""
     s = serial.Serial(port, 115200, timeout=0.5)
     try:
-        s.dtr = False          # IO0 high → normal boot (not download)
-        s.rts = True           # EN low → reset
+        s.dtr = False      # IO0 high → normal boot (not download)
+        s.rts = True       # EN low → reset
         time.sleep(0.15)
-        s.rts = False          # EN high → run app
-        time.sleep(0.3)        # give it a moment to start booting
+        s.rts = False      # EN high → run app
     finally:
         s.close()
 
@@ -126,19 +125,59 @@ def make_qr(node_id, psk_hex, code, out_dir):
                           "code": code},
                          separators=(",", ":"))
     png = os.path.join(out_dir, f"{code}.png")
-    # Render the QR, then caption it with the human-readable code so the printed /
+    svg = os.path.join(out_dir, f"{code}.svg")
+    # Render the QR, then caption the PNG with the human-readable code so the printed /
     # engraved sticker shows BOTH the machine QR and the 6-char code (e.g. "896 GFE").
+    # Also emit a VECTOR SVG sized for the 20x20 mm enclosure sticker (crisp at any size).
     try:
         import segno
         from io import BytesIO
+        qr = segno.make(payload, error="m")
         buf = BytesIO()
-        segno.make(payload, error="m").save(buf, kind="png", scale=8, border=2)
+        qr.save(buf, kind="png", scale=8, border=2)
         buf.seek(0)
         _caption_png(buf, code, png)
+        # Composite: QR + the human-readable 3+3 code below it, all within QR_SVG_MM.
+        _qr_svg_captioned(qr, code, svg, QR_SVG_MM)
     except ImportError:
         import subprocess
         subprocess.run(["qrencode", "-o", png, "-m", "2", "-s", "8", payload], check=True)
+        subprocess.run(["qrencode", "-t", "SVG", "-o", svg, "-m", "2", payload], check=True)
     return png, payload
+
+
+def _qr_svg_captioned(qr, code, out_path, mm):
+    """Write a vector SVG of `mm`×`mm` (for the enclosure sticker): the QR on top and the
+    human-readable 3+3 code (e.g. '971 KKJ') centred underneath, so a person can identify
+    the node by eye. `qr` is a segno QRCode. Dark modules are emitted as one path; the QR
+    fills the square minus a thin strip reserved for the code line."""
+    matrix = [list(row) for row in qr.matrix]  # data modules (no quiet zone)
+    n = len(matrix)
+    border = 2
+    total = n + 2 * border
+    text_h = 3.0                    # mm reserved for the code line
+    unit = (mm - text_h) / total    # mm per module (incl. quiet zone)
+    parts = []
+    for r, row in enumerate(matrix):
+        for c, dark in enumerate(row):
+            if dark:
+                x = (c + border) * unit
+                y = (r + border) * unit
+                parts.append(f"M{x:.3f} {y:.3f}h{unit:.3f}v{unit:.3f}h{-unit:.3f}z")
+    code_fmt = f"{code[:3]} {code[3:]}" if len(code) == 6 else code
+    svg = (
+        '<?xml version="1.0" encoding="utf-8"?>\n'
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{mm}mm" height="{mm}mm" '
+        f'viewBox="0 0 {mm} {mm}">'
+        f'<rect width="{mm}" height="{mm}" fill="#ffffff"/>'
+        f'<path fill="#000000" d="{"".join(parts)}"/>'
+        f'<text x="{mm / 2:.2f}" y="{mm - 0.7:.2f}" text-anchor="middle" '
+        f'font-family="monospace" font-weight="bold" font-size="2.6" '
+        f'letter-spacing="0.2" fill="#000000">{code_fmt}</text>'
+        '</svg>'
+    )
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write(svg)
 
 
 def _caption_png(qr_buf, code, out_path):
@@ -196,16 +235,12 @@ def main():
     print(f"Node on {port}\n")
     flash(port, fw, erase=not a.no_erase)
 
-    if a.no_erase:
-        # Update mode: identity/PSK preserved → no new PROV line → don't wait for a QR.
-        print("• resetting node into app (firmware update — identity/PSK preserved) …")
-        reset_node(port)
-        print("\n✓ Firmware updated. Identity/PSK preserved — the existing QR still applies.")
-        return 0
-
     print("• booting + capturing the QR secret …")
     got = reset_and_capture(port, a.timeout)
     if not got:
+        if a.no_erase:
+            print("\n✓ Firmware updated. No PROV line (identity/PSK preserved) — the existing QR still applies.")
+            return 0
         raise SystemExit("No PROV line captured within timeout. Retry (some boards need the RESET/EN button tapped).")
 
     node_id, psk_hex, code = got
