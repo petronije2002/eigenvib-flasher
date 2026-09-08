@@ -39,7 +39,7 @@ from eigenvib_flasher import (
     append_registry,
 )
 
-APP = "EigenVib Flasher"
+APP = "EigenVib Flasher — Faza 2 (int16 + channels + deflate)"
 AUTO = "Auto-detect"
 DEBUG_LOG = os.path.expanduser("~/eigenvib_flasher_debug.log")
 

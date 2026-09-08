@@ -1,0 +1,11 @@
+EigenVib firmware — PRODUCTION build
+version: prod-faza2 (int16 + channel-select + DEFLATE + dynamic-chunk)
+date:    2026-09-08
+source:  sensor_module @ feat/hetero
+
+Faza 1+2 (ADR-0004): accel-only/full channel selection, int16 transport, per-chunk DEFLATE
+compression, dynamic MTU-fill chunk size. Matches the production cloud stack.
+
+Flash ALL production nodes (root + children) with this version — the mesh chunk format
+changed; a mixed old/new mesh would misread the payload. Use update mode (uncheck "Erase")
+to keep each node's provisioned identity/PSK.
