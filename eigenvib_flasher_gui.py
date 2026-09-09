@@ -39,7 +39,7 @@ from eigenvib_flasher import (
     append_registry,
 )
 
-APP = "EigenVib Flasher — Faza 4 (BURST + DEFLATE)"
+APP = "EigenVib Flasher — Faza 4 (BURST + mesh fix)"
 AUTO = "Auto-detect"
 DEBUG_LOG = os.path.expanduser("~/eigenvib_flasher_debug.log")
 
