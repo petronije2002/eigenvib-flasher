@@ -53,13 +53,17 @@ pyinstaller --onefile --name EigenVib-Flasher --add-data "firmware;firmware" eig
 **GUI build** — same, add `--windowed` and point at the GUI script (→ `.app` on macOS,
 a console-less `.exe` on Windows):
 
+`--collect-data esptool` is REQUIRED: esptool 4.7+ ships its ESP32-S3 flasher-stub
+as JSON data files; without collecting them the frozen app dies at connect with
+*"Flasher stub data is missing for ESP32-S3"*. On macOS prefer `./build_macos.sh`.
+
 ```bash
-# macOS   -> dist/EigenVib-Flasher.app
+# macOS   -> dist/EigenVib-Flasher.app   (or just run ./build_macos.sh)
 pyinstaller --onefile --windowed --name EigenVib-Flasher \
-    --add-data "firmware:firmware" eigenvib_flasher_gui.py
-# Windows -> dist\EigenVib-Flasher.exe
+    --collect-data esptool --add-data "firmware:firmware" eigenvib_flasher_gui.py
+# Windows -> dist\EigenVib-Flasher.exe   (or run build_windows.bat)
 pyinstaller --onefile --windowed --name EigenVib-Flasher ^
-    --add-data "firmware;firmware" eigenvib_flasher_gui.py
+    --collect-data esptool --add-data "firmware;firmware" eigenvib_flasher_gui.py
 ```
 Result: `dist/EigenVib-Flasher` (macOS) / `dist\EigenVib-Flasher.exe` (Windows) — copy it to
 the flashing station and run it. QR files land in `qr_codes/` next to where it's run
