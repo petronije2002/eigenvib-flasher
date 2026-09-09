@@ -1,8 +1,8 @@
 EigenVib firmware — PRODUCTION build
-version: prod-faza4e (BURST + MQTT batching)
+version: prod-faza4f (BURST + MQTT batch + DEFLATE)
 date:    2026-09-09
-source:  sensor_module @ feat/hetero (bb90911)
+source:  sensor_module @ feat/hetero (4d6c693)
 
-Batch više chunk-ova u JEDNU MQTT poruku — pravo usko grlo je bio root→MQTT
-(1 publish/chunk, ~80 ms). ~10× manje poruka. Flešuj SVE nodove. Uz ovo ide
-i cloud ingest (već deployovan) koji razume 'chunk_batch'.
+Burst harvest + MQTT batching + DEFLATE kompresija (brzi tdefl, PSRAM). Posle
+batching-a smo bandwidth-bound pa kompresija sad pomaže. Flešuj SVE nodove.
+Ide uz cloud ingest (već deployovan) koji dekompresuje batch chunk-ove.
