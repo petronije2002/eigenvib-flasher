@@ -22,9 +22,11 @@ echo "== [2/4] deps =="
 "$VPY" -m pip install --quiet "esptool==4.12.0" "pyserial>=3.5" "segno>=1.5" "pillow>=10.2" pyinstaller
 
 echo "== [3/4] build EigenVib-Flasher.app =="
-# --collect-data esptool is REQUIRED: bundles the ESP32-S3 flasher-stub JSONs, else the
-# frozen app dies with "Flasher stub data is missing for ESP32-S3".
-"$VPY" -m PyInstaller --onefile --windowed --clean --noconfirm \
+# onedir (NOT --onefile): a onefile .app re-extracts ~19MB to a temp dir on every launch
+# (slow) and clashes with macOS security (needs a double launch to open). onedir starts
+# instantly and is a normal .app bundle. --collect-data esptool is REQUIRED: bundles the
+# ESP32-S3 flasher-stub JSONs, else the app dies "Flasher stub data is missing for ESP32-S3".
+"$VPY" -m PyInstaller --windowed --clean --noconfirm \
   --name "EigenVib-Flasher" \
   --collect-data esptool \
   --add-data "firmware:firmware" \

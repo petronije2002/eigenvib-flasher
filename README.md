@@ -57,9 +57,13 @@ a console-less `.exe` on Windows):
 as JSON data files; without collecting them the frozen app dies at connect with
 *"Flasher stub data is missing for ESP32-S3"*. On macOS prefer `./build_macos.sh`.
 
+On macOS use **onedir** (no `--onefile`): a onefile `.app` re-extracts ~19 MB on every
+launch (slow) and clashes with macOS security (opens only on the 2nd try). onedir starts
+instantly and is still one `.app`.
+
 ```bash
 # macOS   -> dist/EigenVib-Flasher.app   (or just run ./build_macos.sh)
-pyinstaller --onefile --windowed --name EigenVib-Flasher \
+pyinstaller --windowed --name EigenVib-Flasher \
     --collect-data esptool --add-data "firmware:firmware" eigenvib_flasher_gui.py
 # Windows -> dist\EigenVib-Flasher.exe   (or run build_windows.bat)
 pyinstaller --onefile --windowed --name EigenVib-Flasher ^
