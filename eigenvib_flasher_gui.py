@@ -39,7 +39,7 @@ from eigenvib_flasher import (
     append_registry,
 )
 
-APP = "EigenVib Flasher — Faza 4 STABLE (burst+batch)"
+APP = "EigenVib Flasher — Faza 4 (burst+binary batch+TCP)"
 AUTO = "Auto-detect"
 DEBUG_LOG = os.path.expanduser("~/eigenvib_flasher_debug.log")
 
