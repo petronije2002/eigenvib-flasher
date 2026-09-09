@@ -1,12 +1,9 @@
 EigenVib firmware — PRODUCTION build
-version: prod-faza4 (BURST harvest)
+version: prod-faza4c (BURST + DEFLATE)
 date:    2026-09-09
 source:  sensor_module @ feat/hetero (ebb3015)
-sha256:  e5dc87b1e7f1… (sensor_node.bin)
+sha256:  c7e194f33aee… (sensor_node.bin)
 
-Faza 4 (ADR-0004): ROOT šalje JEDAN harvest_burst po nodu → child izbaci SVE
-chunk-ove zaredom (bez zahteva-po-komadu), pa harvest_done; root reparira rupe
-ciljano. Uklanja per-chunk request round-trip (glavno usko grlo). Kompresija OFF.
-
-Flešuj SVE nodove (root + decu) ovom verzijom — burst je root-driven, ali svi
-treba isto da se ponašaju. Update mode (otključaj "Erase") čuva identitet/PSK.
+Faza 4 + kompresija: burst harvest (jedan zahtev → child stream sve) + DEFLATE
+(delta+zigzag+raw deflate) po chunk-u. Merenje pokazalo da je usko grlo propusnost
+mesh linka (~136 kbit/s), pa manje bajtova = brže. Flešuj SVE nodove.
