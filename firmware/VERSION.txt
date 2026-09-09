@@ -1,11 +1,16 @@
 EigenVib firmware — PRODUCTION build
-version: prod-faza2 (int16 + channel-select + DEFLATE + dynamic-chunk)
-date:    2026-09-08
-source:  sensor_module @ feat/hetero
+version: prod-faza3 (parallel + pipelined harvest)
+date:    2026-09-09
+source:  sensor_module @ feat/hetero (3894a9d)
+sha256:  b04758dc1390… (sensor_node.bin)
 
-Faza 1+2 (ADR-0004): accel-only/full channel selection, int16 transport, per-chunk DEFLATE
-compression, dynamic MTU-fill chunk size. Matches the production cloud stack.
+Faza 3 (ADR-0004): ROOT harvests ALL nodes in parallel with a per-node request
+window (pipelining) — mesh round-trips overlap, so multi-node harvest time drops
+from the SUM over nodes toward the slowest single node. A stalled node no longer
+hangs the session (per-node give-up → partial). Builds on Faza 1+2 (accel-only/
+full channel select, int16 transport, dynamic MTU-fill chunk). Compression is
+currently OFF (codec=none) — isolated for this test.
 
-Flash ALL production nodes (root + children) with this version — the mesh chunk format
-changed; a mixed old/new mesh would misread the payload. Use update mode (uncheck "Erase")
-to keep each node's provisioned identity/PSK.
+Flash ALL production nodes (root + children) with this version — same mesh chunk
+format as Faza 2, but flash every node so behavior is uniform. Use update mode
+(uncheck "Erase") to keep each node's provisioned identity/PSK.
