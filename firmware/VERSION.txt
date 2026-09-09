@@ -1,8 +1,7 @@
 EigenVib firmware — PRODUCTION build
-version: prod-faza4f (BURST + MQTT batch + DEFLATE)
+version: prod-faza4-STABLE (BURST + MQTT batch, no compression)
 date:    2026-09-09
-source:  sensor_module @ feat/hetero (4d6c693)
+source:  sensor_module @ feat/hetero (9715986)
 
-Burst harvest + MQTT batching + DEFLATE kompresija (brzi tdefl, PSRAM). Posle
-batching-a smo bandwidth-bound pa kompresija sad pomaže. Flešuj SVE nodove.
-Ide uz cloud ingest (već deployovan) koji dekompresuje batch chunk-ove.
+STABILNA verzija: burst harvest + MQTT batching → 40s -> ~15.7s (2.6x), pouzdano.
+Kompresija ISKLJUČENA (dvaput destabilizovala nodove; dobitak mali). Flešuj SVE nodove.
