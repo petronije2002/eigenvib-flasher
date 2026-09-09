@@ -1,7 +1,7 @@
 EigenVib firmware — PRODUCTION build
-version: prod-faza4-STABLE (BURST + MQTT batch, no compression)
+version: prod-STABLE2 (burst + BIGGER MQTT batch, no compression)
 date:    2026-09-09
-source:  sensor_module @ feat/hetero (9715986)
+source:  sensor_module @ feat/hetero (56b1254)
 
-STABILNA verzija: burst harvest + MQTT batching → 40s -> ~15.7s (2.6x), pouzdano.
-Kompresija ISKLJUČENA (dvaput destabilizovala nodove; dobitak mali). Flešuj SVE nodove.
+STABILNO: burst + MQTT batching (sad veći batch: ~24 chunk-a / poruci). Bez
+kompresije. Flešuj SVE nodove. Ova verzija i oporavlja zamrznute nodove.
