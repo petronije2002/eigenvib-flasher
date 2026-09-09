@@ -1,16 +1,12 @@
 EigenVib firmware — PRODUCTION build
-version: prod-faza3 (parallel + pipelined harvest)
+version: prod-faza4 (BURST harvest)
 date:    2026-09-09
-source:  sensor_module @ feat/hetero (3894a9d)
-sha256:  b04758dc1390… (sensor_node.bin)
+source:  sensor_module @ feat/hetero (ebb3015)
+sha256:  e5dc87b1e7f1… (sensor_node.bin)
 
-Faza 3 (ADR-0004): ROOT harvests ALL nodes in parallel with a per-node request
-window (pipelining) — mesh round-trips overlap, so multi-node harvest time drops
-from the SUM over nodes toward the slowest single node. A stalled node no longer
-hangs the session (per-node give-up → partial). Builds on Faza 1+2 (accel-only/
-full channel select, int16 transport, dynamic MTU-fill chunk). Compression is
-currently OFF (codec=none) — isolated for this test.
+Faza 4 (ADR-0004): ROOT šalje JEDAN harvest_burst po nodu → child izbaci SVE
+chunk-ove zaredom (bez zahteva-po-komadu), pa harvest_done; root reparira rupe
+ciljano. Uklanja per-chunk request round-trip (glavno usko grlo). Kompresija OFF.
 
-Flash ALL production nodes (root + children) with this version — same mesh chunk
-format as Faza 2, but flash every node so behavior is uniform. Use update mode
-(uncheck "Erase") to keep each node's provisioned identity/PSK.
+Flešuj SVE nodove (root + decu) ovom verzijom — burst je root-driven, ali svi
+treba isto da se ponašaju. Update mode (otključaj "Erase") čuva identitet/PSK.
