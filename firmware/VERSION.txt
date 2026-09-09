@@ -1,9 +1,8 @@
 EigenVib firmware — PRODUCTION build
-version: prod-faza4d (BURST + mesh throughput fix)
+version: prod-faza4e (BURST + MQTT batching)
 date:    2026-09-09
-source:  sensor_module @ feat/hetero (592c7e0)
+source:  sensor_module @ feat/hetero (bb90911)
 
-Burst harvest + per-packet logs pulled off the hot path. ESP-MESH 1-hop should do
-~1 Mbps; we saw ~0.13 Mbps because ESP_LOGI fired per mesh packet, and on ESP32-S3
-USB-Serial/JTAG with no monitor attached that BLOCKS → throttles the RX loop.
-Compression OFF (raw is enough once mesh runs at spec). Flešuj SVE nodove.
+Batch više chunk-ova u JEDNU MQTT poruku — pravo usko grlo je bio root→MQTT
+(1 publish/chunk, ~80 ms). ~10× manje poruka. Flešuj SVE nodove. Uz ovo ide
+i cloud ingest (već deployovan) koji razume 'chunk_batch'.
