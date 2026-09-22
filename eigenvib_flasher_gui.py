@@ -15,6 +15,7 @@ into ONE file with PyInstaller just like the CLI — add ``--windowed``:
       --add-data "firmware;firmware" eigenvib_flasher_gui.py
 """
 import os
+import pathlib
 import queue
 import subprocess
 import sys
@@ -39,7 +40,22 @@ from eigenvib_flasher import (
     append_registry,
 )
 
-APP = "EigenVib Flasher — Faza 4 (burst+binary batch+TCP)"
+APP = "EigenVib Flasher"
+
+# Read at start-up from the bundled image itself, not from a constant here: a version
+# typed in the source drifts from the .bin the first time someone forgets to change it,
+# which is exactly how three disagreeing "firmware versions" came about. See
+# fw_version.py — ESP-IDF stamps version.txt into the image's app descriptor.
+def _bundled_fw_version():
+    try:
+        from fw_version import firmware_version
+        return firmware_version(pathlib.Path(firmware_dir()) / "sensor_node.bin")
+    except Exception as e:  # noqa: BLE001
+        dbg(f"could not read the bundled firmware version: {e}")
+        return None
+
+
+FW_VERSION = None          # filled in main(), once firmware_dir() is resolvable
 AUTO = "Auto-detect"
 DEBUG_LOG = os.path.expanduser("~/eigenvib_flasher_debug.log")
 
@@ -92,16 +108,33 @@ class FlasherGUI:
         self._qr_img = None  # keep a ref so Tk doesn't GC the image
         dbg("init: start building UI")
 
-        root.title(APP)
+        root.title(f"{APP} — firmware {FW_VERSION}" if FW_VERSION else APP)
         root.minsize(660, 560)
 
         outer = ttk.Frame(root, padding=14)
         outer.pack(fill="both", expand=True)
 
-        ttk.Label(outer, text=APP, font=("Helvetica", 18, "bold")).pack(anchor="w")
+        # Title row: the app name, and beside it the firmware this build will write.
+        # Prominent on purpose — which firmware a node ends up running is the single
+        # thing an operator most needs to know before pressing FLASH, and the file name
+        # is not enough because it survives exactly until someone renames the file.
+        titlerow = ttk.Frame(outer)
+        titlerow.pack(fill="x")
+        ttk.Label(titlerow, text=APP, font=("Helvetica", 18, "bold")).pack(side="left")
+        ttk.Label(
+            titlerow,
+            text=(f"  firmware  {FW_VERSION}" if FW_VERSION else "  firmware  unknown"),
+            font=("Helvetica", 15, "bold"),
+            foreground=("#1a7f37" if FW_VERSION else "#b00020"),
+        ).pack(side="left", padx=(8, 0))
         ttk.Label(
             outer,
-            text="Plug a node in over USB, then press FLASH. The QR is saved for you.",
+            text=(
+                "Plug a node in over USB, then press FLASH. The QR is saved for you."
+                if FW_VERSION else
+                "Plug a node in over USB, then press FLASH. WARNING: the bundled firmware "
+                "carries no version — this build may be broken."
+            ),
             foreground="#666",
         ).pack(anchor="w", pady=(0, 10))
 
@@ -398,9 +431,12 @@ class FlasherGUI:
 
 def main():
     import platform
+    global FW_VERSION
+    FW_VERSION = _bundled_fw_version()
     dbg("=" * 40)
     dbg(f"launch: py={sys.version.split()[0]} arch={platform.machine()} "
-        f"tk={tk.TkVersion} frozen={getattr(sys, 'frozen', False)} fw={firmware_dir()}")
+        f"tk={tk.TkVersion} frozen={getattr(sys, 'frozen', False)} fw={firmware_dir()} "
+        f"fw_version={FW_VERSION}")
     try:
         root = tk.Tk()
         try:

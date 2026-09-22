@@ -21,10 +21,18 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install esptool==4.12.0 pyserial==3.5 segno==1.6.6 "pillow>=10.2" pyinstaller
 
-      - name: Build EigenVib-Flasher.exe
+      # Read the version OUT OF the firmware image (ESP-IDF stamps it from version.txt
+      # into the app descriptor). Never typed here: a label beside a binary drifts the
+      # first time someone forgets to update it.
+      - name: Read the bundled firmware version
+        id: fw
+        shell: bash
+        run: echo "version=$(python fw_version.py)" >> "$GITHUB_OUTPUT"
+
+      - name: Build EigenVib-Flasher-${{ steps.fw.outputs.version }}.exe
         run: >
           python -m PyInstaller --onefile --windowed --clean --noconfirm
-          --name EigenVib-Flasher --collect-data esptool
+          --name EigenVib-Flasher-${{ steps.fw.outputs.version }} --collect-data esptool
           --add-data "firmware;firmware" eigenvib_flasher_gui.py
 
       - name: Show output size (sanity)
@@ -33,6 +41,6 @@ jobs:
       - name: Upload the .exe artifact
         uses: actions/upload-artifact@v4
         with:
-          name: EigenVib-Flasher-windows-x64
-          path: dist/EigenVib-Flasher.exe
+          name: EigenVib-Flasher-${{ steps.fw.outputs.version }}-windows-x64
+          path: dist/EigenVib-Flasher-${{ steps.fw.outputs.version }}.exe
           if-no-files-found: error
